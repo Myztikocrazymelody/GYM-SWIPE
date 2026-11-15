@@ -92,7 +92,7 @@ h2.sec{font-family:var(--disp);font-weight:800;font-size:30px;text-transform:upp
 .segs i{flex:1;height:5px;border-radius:1px;background:var(--edge)}
 .segs i.d{background:#8c7420}
 .segs i.cur{background:var(--hazard)}
-.scroller{flex:1;position:relative;overflow:hidden;touch-action:pan-y}
+.scroller{flex:1;min-height:0;position:relative;overflow:hidden;overflow:clip;touch-action:pan-y}
 .track{display:flex;height:100%;will-change:transform}
 .card{flex:none;width:100%;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:calc(var(--sb) + 190px)}
 .pnav{position:fixed;left:0;right:0;bottom:0;z-index:15;display:grid;grid-template-columns:84px 1fr;gap:6px;padding:10px 12px calc(var(--sb) + 10px);background:linear-gradient(transparent,var(--iron) 30%)}
@@ -157,6 +157,16 @@ h2.sec{font-family:var(--disp);font-weight:800;font-size:30px;text-transform:upp
 .lift .chg b{color:var(--hazard);font-weight:700}
 .lift svg{display:block;width:100%;height:auto;margin-top:8px}
 .empty{padding:22px 16px;background:var(--plate);border-left:3px solid var(--edge);border-radius:2px;font-size:16px;line-height:1.5;margin-top:18px}
+.wu{margin:20px 18px 0}
+.wu h5{margin:0 0 6px;font-size:15px;font-weight:700;display:flex;justify-content:space-between}
+.wu h5 span{font-weight:500;color:var(--dust)}
+.wur{display:grid;grid-template-columns:44px 1fr 64px;align-items:center;gap:10px;padding:8px 0;border-top:1px dashed var(--edge)}
+.wur .sn{font-family:var(--disp);font-weight:900;font-size:24px;color:var(--dust)}
+.wur .v{font-family:var(--num);font-weight:700;font-size:22px}
+.wur .v small{font-family:var(--body);font-weight:500;font-size:14px;color:var(--dust)}
+.wur button{height:40px;border-radius:3px;background:var(--plate);border:1px solid var(--edge);font-family:var(--disp);font-weight:900;font-size:17px;text-transform:uppercase}
+.wur.done .v{color:var(--dust);text-decoration:line-through}
+.wur.done button{background:var(--plate2);color:var(--hazard);border-color:var(--hazard)}
 .plan{margin:14px 18px 0;padding:12px 14px;background:var(--plate);border-left:3px solid var(--hazard);border-radius:2px;font-size:15px;line-height:1.45}
 .plan.first{border-left-color:var(--edge)}
 .plan b{font-family:var(--num);font-weight:700;font-size:17px}
@@ -553,6 +563,7 @@ function workout(){
     ${(()=>{const o=DAYS[S.day].ex[i];if(!ALTS[o])return '';const sw=id!==o;return `<button class="swapb ${sw?'on':''}" data-a="swap" data-o="${o}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F5C518" stroke-width="2.4" stroke-linecap="square"><path d="M4 8h14l-4-4M20 16H6l4 4"/></svg>${sw?'Swapped in for '+EX[o].name:'Equipment taken?'}<span>${sw?'Change':'Swap it'}</span></button>`})()}
     <div class="mus">Works <b>${e.mus.join(', ').toLowerCase()}</b>.${e.gear?` Uses: <b>${e.gear.toLowerCase()}</b>.`:''} Rest ${e.rest}s between sets.${pr?` Your best: <b>${pr} lb</b>.`:''}</div>
     ${planText(id)}
+    <div class="wu" data-wu="${id}"></div>
     <div class="sets">${(PL=planOf(id).sets,'')}${e.reps.map((r,k)=>{const s=a[k]||{},q=PL[k]||{},rr=typeof s.r==='number'?s.r:(r==='Max'?(q.lastR||8):r);return `<div class="set ${s.d?'done':''}" data-id="${id}" data-k="${k}">${s.pr?'<span class="pr">New best</span>':''}<div class="sn">${k+1}</div><div class="rp"><span class="tg">${r==='Max'?'Max':r}<small>${r==='Max'?'as many as you can':'reps'+(e.per?' each leg':'')}</small></span><span class="stp"><button data-a="rm" data-id="${id}" data-k="${k}" aria-label="One rep less">−</button><b>${rr}</b><button data-a="rpl" data-id="${id}" data-k="${k}" aria-label="One rep more">+</button></span></div>${e.bw?'<div class="bw">Bodyweight</div>':`<div class="wi"><input inputmode="decimal" placeholder="${q.w?q.w:'lb'}" value="${s.w||''}" data-id="${id}" data-k="${k}" aria-label="Weight for set ${k+1} in pounds">${q.up?`<em class="hint up">+${incOf(id)} lb</em>`:q.miss?'<em class="hint">same</em>':''}</div>`}<button class="go" data-a="set" data-id="${id}" data-k="${k}">${s.d?'Done':'Go'}</button></div>`}).join('')}</div>
     <div class="how"><h4>How to do it</h4><ol>${e.steps.map(s=>`<li>${s}</li>`).join('')}</ol></div>
     <div class="how"><h4>Keep it clean</h4><ul>${e.tips.map(s=>`<li>${s}</li>`).join('')}</ul></div>
@@ -562,6 +573,7 @@ function workout(){
   h+=`<section class="card" data-i="${n}"><div class="fin" id="fin"></div></section>`;
   h+=`</div></div><div class="pnav"><button class="pv" data-a="prev" id="pv" aria-label="Previous lift">‹</button><button class="nx" data-a="next" id="nx">Next</button></div><div class="timer" id="tm"><div class="fill" id="tf"></div><div class="tv" id="tv">1:30</div><div class="tl" id="tl">Rest.<br>Breathe.</div><button data-a="t+">+15</button><button class="sk" data-a="tskip">Skip</button></div></div>`;
   app.innerHTML=h;
+  exList(S.day).forEach(refreshWU);
   pager();place(false);onCard();saveUI();resumeTimer();
 }
 function onCard(){
@@ -581,7 +593,7 @@ const NC=()=>exList(S.day).length+1;
 function place(anim,px){const tr=document.getElementById('track');if(!tr)return;tr.style.transition=anim?'transform .3s cubic-bezier(.2,.8,.2,1)':'none';tr.style.transform=`translate3d(calc(${-S.idx*100}% + ${px||0}px),0,0)`}
 function goTo(i){i=Math.max(0,Math.min(NC()-1,i));const ch=i!==S.idx;S.idx=i;place(true);if(ch){onCard();saveUI();const c=document.querySelector(`.card[data-i="${i}"]`);if(c)c.scrollTop=0}}
 function pager(){
-  const sc=document.getElementById('sc');let x0=0,y0=0,dx=0,lock=null,t0=0;
+  const sc=document.getElementById('sc');sc.addEventListener('scroll',()=>{if(sc.scrollLeft)sc.scrollLeft=0});let x0=0,y0=0,dx=0,lock=null,t0=0;
   sc.addEventListener('touchstart',e=>{if(e.touches.length>1)return;const t=e.touches[0];x0=t.clientX;y0=t.clientY;dx=0;lock=null;t0=Date.now()},{passive:true});
   sc.addEventListener('touchmove',e=>{const t=e.touches[0],mx=t.clientX-x0,my=t.clientY-y0;
     if(!lock&&(Math.abs(mx)>7||Math.abs(my)>7))lock=Math.abs(mx)>Math.abs(my)*.7?'x':'y';
@@ -649,6 +661,20 @@ function progress(){
       h+=`<div class="lift"><div class="top"><div><div class="nm">${e.name}</div><div class="chg">${pts.length>1?(diff>0?`<b>+${diff} ${bw?'reps':'lb'}</b> ${bw?'since':'on your top set since'} ${new Date(pts[0].d+'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})}`:diff<0?`${diff} ${bw?'reps':'lb'} vs first session`:'Holding steady'):'One session so far'}</div></div><div class="bst">${best}<small> ${bw?'total reps':'lb'}</small></div></div>${chart(pts,bw)}</div>`});}
   h+=`</div>`;app.innerHTML=h;window.scrollTo(0,0);saveUI();
 }
+
+const WU={bench:'bb',incline:'bb',cgbench:'bb',squat:'bb',deadlift:'bb',sldl:'bb',cleanpress:'bb',rows:'bb',dbbench:'db',incdb:'db',goblet:'db',dbdl:'db',dbpress:'db',legpress:'mc'};
+const wuKey=id=>'wu:'+today+':'+S.day+':'+id;
+function workW(id){const inp=document.querySelector(`input[data-id="${id}"][data-k="0"]`);const v=inp?parseFloat(inp.value||inp.placeholder):NaN;if(v>0)return v;const q=(planOf(id).sets[0]||{});return q.w||0}
+function wuSets(id){const t=WU[id],w=workW(id),min=t==='bb'?45:t==='db'?5:0,r5=x=>Math.max(min,Math.round(x/5)*5);
+  if(!w)return null;
+  const a=r5(w*.5),b=r5(w*.75);
+  if(b<=min)return[{w:min,r:10}];
+  return a===b?[{w:a,r:8}]:[{w:a,r:8},{w:b,r:4}]}
+function wuHTML(id){if(!WU[id])return '';const sets=wuSets(id),done=store.get(wuKey(id),[]),unit=WU[id]==='db'?' lb each':' lb';
+  const head=`<h5>Warm-up first<span>not counted</span></h5>`;
+  if(!sets)return `<div class="wu" data-wu="${id}">${head}<div class="wur"><div class="sn">W</div><div class="v">${WU[id]==='bb'?'Empty bar':'Light weight'} <small>× 10, then half your first set × 5</small></div><div></div></div></div>`;
+  return `<div class="wu" data-wu="${id}">${head}${sets.map((x,k)=>`<div class="wur ${done[k]?'done':''}"><div class="sn">W${k+1}</div><div class="v">${x.w===45&&WU[id]==='bb'?'Empty bar':x.w+unit} <small>× ${x.r}</small></div><button data-a="wu" data-id="${id}" data-k="${k}">${done[k]?'Done':'Go'}</button></div>`).join('')}</div>`}
+function refreshWU(id){const el=document.querySelector(`[data-wu="${id}"]`);if(el)el.outerHTML=wuHTML(id)}
 function swapSheet(o){
   const bg=document.createElement('div');bg.className='sheet-bg';const cur=getSwaps(S.day)[o]||o;
   const opts=[o,...ALTS[o]];
@@ -674,6 +700,7 @@ app.addEventListener('click',e=>{
   else if(a==='open'){S.idx=+b.dataset.i;workout()}
   else if(a==='home'){stopTimer();home();window.scrollTo(0,0)}
   else if(a==='sched')schedSheet();
+  else if(a==='wu'){const id=b.dataset.id,k=+b.dataset.k,d=store.get(wuKey(id),[]);d[k]=!d[k];store.set(wuKey(id),d);refreshWU(id);if(d[k])startTimer(45,'Warm-up done.<br>Load up.')}
   else if(a==='prog')progress();
   else if(a==='swap')swapSheet(b.dataset.o);
   else if(a==='tipx'){store.set('tipDone',true);home()}
@@ -689,7 +716,7 @@ app.addEventListener('click',e=>{
   else if(a==='prev')goTo(S.idx-1);
   else if(a==='tskip')stopTimer();
 });
-app.addEventListener('input',e=>{const t=e.target;if(t.tagName==='INPUT'&&t.dataset.id)saveSet(t.dataset.id,+t.dataset.k,{w:t.value})});
+app.addEventListener('input',e=>{const t=e.target;if(t.tagName==='INPUT'&&t.dataset.id){saveSet(t.dataset.id,+t.dataset.k,{w:t.value});if(t.dataset.k==='0')refreshWU(t.dataset.id)}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveUI();else if(iso(new Date())!==today)location.reload()});
 window.addEventListener('pagehide',saveUI);
 const ui=store.get('ui',null);
