@@ -167,6 +167,14 @@ h2.sec{font-family:var(--disp);font-weight:800;font-size:30px;text-transform:upp
 .wur button{height:40px;border-radius:3px;background:var(--plate);border:1px solid var(--edge);font-family:var(--disp);font-weight:900;font-size:17px;text-transform:uppercase}
 .wur.done .v{color:var(--dust);text-decoration:line-through}
 .wur.done button{background:var(--plate2);color:var(--hazard);border-color:var(--hazard)}
+.vol{padding:8px 0}
+.vol .vt{display:flex;justify-content:space-between;font-size:15px;margin-bottom:6px}
+.vol .vt span{color:var(--dust);font-family:var(--num);font-weight:600}
+.vb{position:relative;height:12px;background:var(--plate);border-radius:2px;overflow:hidden}
+.vb .zone{position:absolute;top:0;bottom:0;background:#F5C51833;border-left:1px solid #F5C51888;border-right:1px solid #F5C51888}
+.vb .fill{position:absolute;left:0;top:3px;bottom:3px;background:var(--dust);border-radius:1px}
+.vb .fill.in{background:var(--hazard)}
+.bk{display:flex;align-items:center;justify-content:center;height:58px;border-radius:3px;font-family:var(--disp);font-weight:900;font-size:24px;text-transform:uppercase;background:var(--plate);flex:1;cursor:pointer}
 .plan{margin:14px 18px 0;padding:12px 14px;background:var(--plate);border-left:3px solid var(--hazard);border-radius:2px;font-size:15px;line-height:1.45}
 .plan.first{border-left-color:var(--edge)}
 .plan b{font-family:var(--num);font-weight:700;font-size:17px}
@@ -500,20 +508,30 @@ function trainedOn(dateIso){try{for(let i=0;i<localStorage.length;i++){const k=l
 const planned=()=>Object.values(sched).filter(Boolean).length;
 const INC={squat:10,deadlift:10,sldl:10};const incOf=id=>INC[id]||5;
 function prevSession(id){let best=null;try{for(let i=0;i<localStorage.length;i++){const key=localStorage.key(i),m=key&&key.match(/^gs:log:(\d{4}-\d\d-\d\d):\d$/);if(!m||m[1]>=today)continue;const a=(JSON.parse(localStorage.getItem(key))||{})[id];if(a&&a.some(x=>x&&x.d)&&(!best||m[1]>best.date))best={date:m[1],sets:a}}}catch(e){}return best}
-function planOf(id){const e=EX[id],p=prevSession(id),fb=parseFloat(store.get('w:'+id,''))||null;
-  return{p,sets:e.reps.map((t,k)=>{const s=p&&p.sets[k];
+const r5=x=>Math.max(5,Math.round(x/5)*5);
+const feelOf=()=>store.get('feel:'+today+':'+S.day,'');
+function sessionsOf(id){const out=[];try{for(let i=0;i<localStorage.length;i++){const key=localStorage.key(i),m=key&&key.match(/^gs:log:(\d{4}-\d\d-\d\d):\d$/);if(!m||m[1]>=today)continue;const a=(JSON.parse(localStorage.getItem(key))||{})[id];if(a&&a.some(x=>x&&x.d))out.push({date:m[1],sets:a})}}catch(e){}return out.sort((a,b)=>a.date<b.date?1:-1)}
+function stalled(id){const e=EX[id];if(e.bw)return false;const ss=sessionsOf(id).slice(0,3);if(ss.length<3)return false;
+  const top=x=>Math.max(0,...x.sets.filter(y=>y&&y.d).map(y=>parseFloat(y.w)||0));
+  const missed=x=>e.reps.some((t,k)=>{const y=x.sets[k];return !y||!y.d||(typeof t==='number'&&typeof y.r==='number'&&y.r<t)});
+  const t0=top(ss[0]);return t0>0&&ss.every(x=>missed(x)&&top(x)>=t0)}
+function planOf(id){const e=EX[id],p=prevSession(id),fb=parseFloat(store.get('w:'+id,''))||null,st=stalled(id),easy=feelOf()==='wrecked';
+  return{p,stall:st,easy,sets:e.reps.map((t,k)=>{const s=p&&p.sets[k];let o;
     if(e.bw)return{lastR:s&&s.d?(typeof s.r==='number'?s.r:t):null};
-    if(!s||!s.d||!(parseFloat(s.w)>0))return{w:fb};
-    const w=parseFloat(s.w),r=typeof s.r==='number'?s.r:t,hit=typeof t!=='number'||r>=t;
-    return{w:hit?w+incOf(id):w,up:hit,miss:!hit,lastW:w,lastR:r}})}}
-function planText(id){const e=EX[id],P=planOf(id),p=P.p;
-  if(!p)return `<div class="plan first">First time on this one. Pick a weight you can do for every rep with clean form. Next time I'll tell you when to go heavier.</div>`;
+    if(!s||!s.d||!(parseFloat(s.w)>0))o={w:fb};
+    else{const w=parseFloat(s.w),r=typeof s.r==='number'?s.r:t,hit=typeof t!=='number'||r>=t;
+      o=st?{w:r5(w*.9),deload:true,lastW:w,lastR:r}:{w:hit?w+incOf(id):w,up:hit,miss:!hit,lastW:w,lastR:r}}
+    if(easy&&o.w){o.w=r5(o.w*.9);o.easy=true;o.up=false;o.miss=false}
+    return o})}}
+function planText(id){const e=EX[id],P=planOf(id),p=P.p,ez=P.easy&&!e.bw?' Easy day: suggested weights are 10% lighter.':'';
+  if(!p)return `<div class="plan first">First time on this one. Pick a weight you can do for every rep with clean form. Next time I'll tell you when to go heavier.${ez}</div>`;
   const d=new Date(p.date+'T12:00').toLocaleDateString('en-US',{weekday:'long'});
-  if(e.bw){const rs=p.sets.map((s,k)=>s&&s.d?(typeof s.r==='number'?s.r:e.reps[k]):'–');return `<div class="plan">Last ${d}: <b>${rs.join(', ')}</b> reps. ${e.reps[0]==='Max'?'Beat each set by one rep.':'Same again, slower and stricter.'}</div>`}
+  if(e.bw){const rs=p.sets.map((s,k)=>s&&s.d?(typeof s.r==='number'?s.r:e.reps[k]):'–');return `<div class="plan">Last ${d}: <b>${rs.join(', ')}</b> reps. ${e.reps[0]==='Max'?(P.easy?'Easy day: match last time, no need to beat it.':'Beat each set by one rep.'):'Same again, slower and stricter.'}</div>`}
   const last=p.sets.map((s,k)=>s&&s.d&&parseFloat(s.w)>0?`${s.w}×${typeof s.r==='number'?s.r:e.reps[k]}`:'–').join(', ');
+  if(P.stall)return `<div class="plan">Last ${d}: <b>${last}</b>. You've been stuck here for 3 sessions. Drop 10% today, hit every rep, and build back up from there. You'll pass this weight within a few weeks.${ez}</div>`;
   const ups=P.sets.filter(x=>x.up).length,miss=P.sets.filter(x=>x.miss).length;
-  const msg=miss?`You missed reps on ${miss===1?'one set':miss+' sets'}. Same weight there until you get every rep.${ups?` Go up ${incOf(id)} lb on the rest.`:''}`:`You hit every rep. Add ${incOf(id)} lb today.`;
-  return `<div class="plan">Last ${d}: <b>${last}</b>. ${msg}</div>`}
+  const msg=P.easy?'':miss?`You missed reps on ${miss===1?'one set':miss+' sets'}. Same weight there until you get every rep.${ups?` Go up ${incOf(id)} lb on the rest.`:''}`:`You hit every rep. Add ${incOf(id)} lb today.`;
+  return `<div class="plan">Last ${d}: <b>${last}</b>. ${msg}${ez}</div>`}
 const repTxt=id=>{const e=EX[id],r=e.reps;return r.every(x=>x===r[0])?`${r.length} × ${r[0]}${e.per?' each leg':''}`:`${r.length} sets: ${r.join(', ')}`};
 let PL=[];
 const media=id=>GIF[id]||'';
@@ -546,6 +564,7 @@ function home(){
   wk.forEach(x=>{const w=x.getDay(),d=sched[w],t=iso(x)<=today&&trainedOn(iso(x));
     h+=`<button class="wd ${d?'':'rest'} ${w===now.getDay()?'today':''} ${w===S.sel?'sel':''} ${t?'did':''}" data-a="pick" data-w="${w}" aria-label="${WDL[w]}"><small>${WD[w]}</small><b>${d?d:'–'}</b></button>`});
   h+=`</div>`;
+  {const lb=store.get('lastBackup',0),n=(()=>{let c=0;try{for(let i=0;i<localStorage.length;i++)if((localStorage.key(i)||'').startsWith('gs:log:'))c++}catch(e){}return c})();if(n>=3&&Date.now()-lb>14*864e5)h+=`<div class="tip"><div>${lb?'Your last backup is over 2 weeks old.':'Your log only lives on this phone.'} Save a backup so you never lose it.</div><button data-a="prog" aria-label="Open backup" style="font-size:15px;color:var(--hazard);font-weight:700">Back up</button></div>`}
   if(!store.get('tipDone',false)&&!(navigator.standalone||matchMedia('(display-mode: standalone)').matches))h+=`<div class="tip"><div>Add this to your Home Screen: open it in Safari, tap Share, then Add to Home Screen.</div><button data-a="tipx" aria-label="Dismiss">×</button></div>`;
   h+=`<button class="progbtn" data-a="prog">Progress<span>Your lifts over time</span></button>`;
   h+=`<div class="foot"><span>Arnold's 3-day split, twice a week</span><button data-a="sched">Change days</button></div></div>`;
@@ -564,7 +583,7 @@ function workout(){
     <div class="mus">Works <b>${e.mus.join(', ').toLowerCase()}</b>.${e.gear?` Uses: <b>${e.gear.toLowerCase()}</b>.`:''} Rest ${e.rest}s between sets.${pr?` Your best: <b>${pr} lb</b>.`:''}</div>
     ${planText(id)}
     <div class="wu" data-wu="${id}"></div>
-    <div class="sets">${(PL=planOf(id).sets,'')}${e.reps.map((r,k)=>{const s=a[k]||{},q=PL[k]||{},rr=typeof s.r==='number'?s.r:(r==='Max'?(q.lastR||8):r);return `<div class="set ${s.d?'done':''}" data-id="${id}" data-k="${k}">${s.pr?'<span class="pr">New best</span>':''}<div class="sn">${k+1}</div><div class="rp"><span class="tg">${r==='Max'?'Max':r}<small>${r==='Max'?'as many as you can':'reps'+(e.per?' each leg':'')}</small></span><span class="stp"><button data-a="rm" data-id="${id}" data-k="${k}" aria-label="One rep less">−</button><b>${rr}</b><button data-a="rpl" data-id="${id}" data-k="${k}" aria-label="One rep more">+</button></span></div>${e.bw?'<div class="bw">Bodyweight</div>':`<div class="wi"><input inputmode="decimal" placeholder="${q.w?q.w:'lb'}" value="${s.w||''}" data-id="${id}" data-k="${k}" aria-label="Weight for set ${k+1} in pounds">${q.up?`<em class="hint up">+${incOf(id)} lb</em>`:q.miss?'<em class="hint">same</em>':''}</div>`}<button class="go" data-a="set" data-id="${id}" data-k="${k}">${s.d?'Done':'Go'}</button></div>`}).join('')}</div>
+    <div class="sets">${(PL=planOf(id).sets,'')}${e.reps.map((r,k)=>{const s=a[k]||{},q=PL[k]||{},rr=typeof s.r==='number'?s.r:(r==='Max'?(q.lastR||8):r);return `<div class="set ${s.d?'done':''}" data-id="${id}" data-k="${k}">${s.pr?'<span class="pr">New best</span>':''}<div class="sn">${k+1}</div><div class="rp"><span class="tg">${r==='Max'?'Max':r}<small>${r==='Max'?'as many as you can':'reps'+(e.per?' each leg':'')}</small></span><span class="stp"><button data-a="rm" data-id="${id}" data-k="${k}" aria-label="One rep less">−</button><b>${rr}</b><button data-a="rpl" data-id="${id}" data-k="${k}" aria-label="One rep more">+</button></span></div>${e.bw?'<div class="bw">Bodyweight</div>':`<div class="wi"><input inputmode="decimal" placeholder="${q.w?q.w:'lb'}" value="${s.w||''}" data-id="${id}" data-k="${k}" aria-label="Weight for set ${k+1} in pounds">${q.deload?'<em class="hint up">−10% reset</em>':q.easy?'<em class="hint">easy day</em>':q.up?`<em class="hint up">+${incOf(id)} lb</em>`:q.miss?'<em class="hint">same</em>':''}</div>`}<button class="go" data-a="set" data-id="${id}" data-k="${k}">${s.d?'Done':'Go'}</button></div>`}).join('')}</div>
     <div class="how"><h4>How to do it</h4><ol>${e.steps.map(s=>`<li>${s}</li>`).join('')}</ol></div>
     <div class="how"><h4>Keep it clean</h4><ul>${e.tips.map(s=>`<li>${s}</li>`).join('')}</ul></div>
     <a class="vid" href="https://www.youtube.com/results?search_query=${encodeURIComponent('how to '+e.name+' proper form')}" target="_blank" rel="noopener">Watch a video demo</a>
@@ -654,11 +673,13 @@ function progress(){
   let h=`<div class="pg"><div class="wbar"><button class="sq" data-a="home" aria-label="Back to home"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EDE9E2" stroke-width="2.6" stroke-linecap="square"><path d="M15 5l-7 7 7 7"/></svg></button></div>
   <h1 class="disp">Progress</h1><p class="lead">${dates.length?`${dates.length} session${dates.length>1?'s':''} logged.`:'Nothing logged yet.'}</p>
   <h2 class="sec" style="margin:26px 0 0">Sessions per week</h2><div class="bars">${weeks.map((w,i)=>`<div><b>${w.n||''}</b><i class="${i===7?'on':''}" style="height:${Math.round(85*w.n/mx)}%"></i><small>${i===7?'Now':w.lab.split(' ')[1]}</small></div>`).join('')}</div>`;
+  h+=volumeHTML();
   const ids=Object.keys(H).sort((a,b)=>Object.keys(H[b]).length-Object.keys(H[a]).length);
   if(!ids.length)h+=`<div class="empty">Finish a workout and each lift gets its own line here: your top weight every session, so you can see it climb.</div>`;
   else{h+=`<h2 class="sec" style="margin:30px 0 4px">Your lifts</h2>`;
     ids.forEach(id=>{const e=EX[id],bw=!!e.bw,ds=Object.keys(H[id]).sort().slice(-12),pts=ds.map(d=>({d,v:bw?H[id][d].reps:H[id][d].top})),first=pts[0].v,last=pts[pts.length-1].v,best=Math.max(...pts.map(p=>p.v)),diff=last-first;
       h+=`<div class="lift"><div class="top"><div><div class="nm">${e.name}</div><div class="chg">${pts.length>1?(diff>0?`<b>+${diff} ${bw?'reps':'lb'}</b> ${bw?'since':'on your top set since'} ${new Date(pts[0].d+'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})}`:diff<0?`${diff} ${bw?'reps':'lb'} vs first session`:'Holding steady'):'One session so far'}</div></div><div class="bst">${best}<small> ${bw?'total reps':'lb'}</small></div></div>${chart(pts,bw)}</div>`});}
+  h+=backupHTML();
   h+=`</div>`;app.innerHTML=h;window.scrollTo(0,0);saveUI();
 }
 
@@ -675,6 +696,28 @@ function wuHTML(id){if(!WU[id])return '';const sets=wuSets(id),done=store.get(wu
   if(!sets)return `<div class="wu" data-wu="${id}">${head}<div class="wur"><div class="sn">W</div><div class="v">${WU[id]==='bb'?'Empty bar':'Light weight'} <small>× 10, then half your first set × 5</small></div><div></div></div></div>`;
   return `<div class="wu" data-wu="${id}">${head}${sets.map((x,k)=>`<div class="wur ${done[k]?'done':''}"><div class="sn">W${k+1}</div><div class="v">${x.w===45&&WU[id]==='bb'?'Empty bar':x.w+unit} <small>× ${x.r}</small></div><button data-a="wu" data-id="${id}" data-k="${k}">${done[k]?'Done':'Go'}</button></div>`).join('')}</div>`}
 function refreshWU(id){const el=document.querySelector(`[data-wu="${id}"]`);if(el)el.outerHTML=wuHTML(id)}
+
+function feelFirst(go){if(feelOf()){go();return}
+  const bg=document.createElement('div');bg.className='sheet-bg';
+  bg.innerHTML=`<div class="sheet" role="dialog" aria-label="How do you feel"><h3 class="disp">How do you feel?</h3>${[['fresh','Fresh','Slept well, ready to push.'],['normal','Normal','A regular day.'],['wrecked','Wrecked','Bad sleep, sore or low energy. Weights drop 10% today.']].map(([k,t,d])=>`<button class="opt" data-feel="${k}"><div><div class="nm">${t}</div><div class="sm">${d}</div></div></button>`).join('')}<div class="note">You can lift on a bad day. Lifting lighter that day keeps you from getting hurt.</div></div>`;
+  bg.addEventListener('click',e=>{const b=e.target.closest('[data-feel]');if(e.target===bg){bg.remove();return}if(!b)return;store.set('feel:'+today+':'+S.day,b.dataset.feel);bg.remove();go()});
+  document.body.appendChild(bg)}
+const GROUP={"Chest": "bench incline pullover dbbench pushup incdb", "Back": "chins rows deadlift dbdl latpull dbrow cablerow sapull", "Shoulders": "cleanpress lateral dbpress cablelat", "Arms": "bbcurl cgbench dbcurl triext cablecurl pushdown", "Legs": "squat lunge legcurl sldl goblet legpress dblegcurl dbrdl", "Calves": "calf", "Abs": "crunch revcrunch", "Forearms": "wristcurl revwrist dbwrist"};const GROUP_OF={};for(const g in GROUP)GROUP[g].split(' ').forEach(id=>GROUP_OF[id]=g);
+const MINOR={Calves:1,Abs:1,Forearms:1};
+function weekVolume(){const wk=weekDates(),a=iso(wk[0]),b=iso(wk[6]),out={};for(const g in GROUP)out[g]=0;
+  try{for(let i=0;i<localStorage.length;i++){const key=localStorage.key(i),m=key&&key.match(/^gs:log:(\d{4}-\d\d-\d\d):\d$/);if(!m||m[1]<a||m[1]>b)continue;const log=JSON.parse(localStorage.getItem(key))||{};for(const id in log){const g=GROUP_OF[id];if(g)out[g]+=(log[id]||[]).filter(x=>x&&x.d).length}}}catch(e){}return out}
+function volumeHTML(){const v=weekVolume();
+  return `<h2 class="sec" style="margin:30px 0 4px">Sets this week</h2><p class="dust" style="margin:6px 0 10px;font-size:15px">Hard sets per muscle since Monday. The yellow zone is where muscle grows.</p>${Object.keys(GROUP).map(g=>{const lo=MINOR[g]?6:10,hi=MINOR[g]?15:20,max=MINOR[g]?20:26,n=v[g],st=n<lo?`need ${lo-n} more`:n>hi?'more than enough':'in the zone';
+    return `<div class="vol"><div class="vt"><b>${g}</b><span>${n} sets, ${st}</span></div><div class="vb"><i class="zone" style="left:${100*lo/max}%;width:${100*(hi-lo)/max}%"></i><i class="fill ${n>=lo&&n<=hi?'in':''}" style="width:${Math.min(100,100*n/max)}%"></i></div></div>`}).join('')}`}
+function backupHTML(){const lb=store.get('lastBackup','');return `<h2 class="sec" style="margin:34px 0 4px">Your data</h2><p class="dust" style="margin:6px 0 12px;font-size:15px">Your log lives only on this phone. Save a backup to Files or iCloud Drive now and then.${lb?` Last backup: ${new Date(lb).toLocaleDateString('en-US',{month:'short',day:'numeric'})}.`:' No backup yet.'}</p>
+  <div class="next" style="margin:0"><button class="nx" data-a="backup">Save backup</button><label class="all bk">Restore<input type="file" accept="application/json,.json" id="restore" hidden></label></div><p class="dust" id="bkmsg" style="font-size:14px;margin:10px 0 0"></p>`}
+function backupData(){const data={};try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('gs:')&&k!=='gs:ui'&&k!=='gs:tm')data[k]=localStorage.getItem(k)}}catch(e){}return{app:'gymswipe',v:1,saved:new Date().toISOString(),data}}
+async function doBackup(){const txt=JSON.stringify(backupData()),name=`gym-swipe-backup-${today}.json`,msg=document.getElementById('bkmsg');
+  try{const f=new File([txt],name,{type:'application/json'});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Gym Swipe backup'});store.set('lastBackup',Date.now());msg.textContent='Backup saved.';return}}catch(e){if(e&&e.name==='AbortError'){msg.textContent='Backup cancelled.';return}}
+  try{const u=URL.createObjectURL(new Blob([txt],{type:'application/json'}));const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();store.set('lastBackup',Date.now());msg.textContent='Backup file downloaded.'}catch(e){msg.textContent='Could not save the backup on this browser.'}}
+function doRestore(file){const msg=document.getElementById('bkmsg');const rd=new FileReader();
+  rd.onload=()=>{try{const j=JSON.parse(rd.result);if(j.app!=='gymswipe'||!j.data)throw 0;let n=0;for(const k in j.data){if(k.startsWith('gs:')){localStorage.setItem(k,j.data[k]);n++}}msg.textContent=`Restored ${n} items from ${new Date(j.saved).toLocaleDateString('en-US',{month:'short',day:'numeric'})}. Reloading…`;setTimeout(()=>location.reload(),900)}catch(e){msg.textContent='That file is not a Gym Swipe backup. Pick the .json file you saved.'}};
+  rd.readAsText(file)}
 function swapSheet(o){
   const bg=document.createElement('div');bg.className='sheet-bg';const cur=getSwaps(S.day)[o]||o;
   const opts=[o,...ALTS[o]];
@@ -696,10 +739,11 @@ app.addEventListener('click',e=>{
   const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
   if(a==='pick'){S.sel=+b.dataset.w;S.day=sched[S.sel]||0;home()}
   else if(a==='force'){S.day=+b.dataset.d;home();window.scrollTo(0,0)}
-  else if(a==='start'){const log=getLog(S.day);const i=exList(S.day).findIndex(id=>!exDone(log,id));S.idx=i<0?0:i;workout()}
-  else if(a==='open'){S.idx=+b.dataset.i;workout()}
+  else if(a==='start'){const log=getLog(S.day);const i=exList(S.day).findIndex(id=>!exDone(log,id));S.idx=i<0?0:i;feelFirst(workout)}
+  else if(a==='open'){S.idx=+b.dataset.i;feelFirst(workout)}
   else if(a==='home'){stopTimer();home();window.scrollTo(0,0)}
   else if(a==='sched')schedSheet();
+  else if(a==='backup')doBackup();
   else if(a==='wu'){const id=b.dataset.id,k=+b.dataset.k,d=store.get(wuKey(id),[]);d[k]=!d[k];store.set(wuKey(id),d);refreshWU(id);if(d[k])startTimer(45,'Warm-up done.<br>Load up.')}
   else if(a==='prog')progress();
   else if(a==='swap')swapSheet(b.dataset.o);
@@ -716,6 +760,7 @@ app.addEventListener('click',e=>{
   else if(a==='prev')goTo(S.idx-1);
   else if(a==='tskip')stopTimer();
 });
+app.addEventListener('change',e=>{if(e.target.id==='restore'&&e.target.files[0])doRestore(e.target.files[0])});
 app.addEventListener('input',e=>{const t=e.target;if(t.tagName==='INPUT'&&t.dataset.id){saveSet(t.dataset.id,+t.dataset.k,{w:t.value});if(t.dataset.k==='0')refreshWU(t.dataset.id)}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveUI();else if(iso(new Date())!==today)location.reload()});
 window.addEventListener('pagehide',saveUI);
