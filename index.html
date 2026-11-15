@@ -117,10 +117,24 @@ h2.sec{font-family:var(--disp);font-weight:800;font-size:30px;text-transform:upp
 .set input{width:100%;height:50px;background:var(--plate);border:1px solid var(--edge);border-radius:3px;color:var(--chalk);text-align:center;font-family:var(--num);font-weight:700;font-size:24px}
 .set input::placeholder{color:#6b6a66;font-size:18px}
 .set .bw{font-size:14px;color:var(--dust);text-align:center}
+.set .wi{position:relative}
+.set .hint{position:absolute;left:0;right:0;bottom:-15px;text-align:center;font-family:var(--num);font-weight:700;font-size:13px;font-style:normal;color:var(--dust);line-height:1}
+.set .hint.up{color:var(--hazard)}
+.set{padding:12px 0 18px}
+.stp{display:none;align-items:center;gap:4px}
+.stp button{width:32px;height:38px;border-radius:3px;background:var(--plate);border:1px solid var(--edge);font-family:var(--num);font-weight:800;font-size:22px;line-height:1}
+.stp b{font-family:var(--num);font-weight:800;font-size:26px;min-width:30px;text-align:center}
+.set.done .tg{display:none}
+.set.done .stp{display:flex}
+.set.done .rp{color:var(--chalk)}
+.plan{margin:14px 18px 0;padding:12px 14px;background:var(--plate);border-left:3px solid var(--hazard);border-radius:2px;font-size:15px;line-height:1.45}
+.plan.first{border-left-color:var(--edge)}
+.plan b{font-family:var(--num);font-weight:700;font-size:17px}
+.upn{color:var(--hazard);font-weight:700}
 .set .go{height:50px;border-radius:3px;background:var(--plate2);border:1px solid var(--edge);font-family:var(--disp);font-weight:900;font-size:20px;text-transform:uppercase}
 .set.done .sn{color:var(--hazard)}
 .set.done .go{background:var(--hazard);border-color:var(--hazard);color:var(--hazard-ink)}
-.set.done .rp{color:var(--dust)}
+
 .pr{position:absolute;left:44px;top:-1px;transform:translateY(-50%);background:var(--hazard);color:var(--hazard-ink);font-family:var(--num);font-weight:800;font-size:13px;padding:2px 7px;border-radius:2px}
 .how{margin:28px 18px 0}
 .how h4{font-family:var(--disp);font-weight:800;font-size:26px;text-transform:uppercase;margin:0 0 10px;line-height:1}
@@ -380,11 +394,28 @@ const isDone=(log,id,k)=>!!(log[id]&&log[id][k]&&log[id][k].d);
 const exDone=(log,id)=>EX[id].reps.every((_,k)=>isDone(log,id,k));
 const exCount=(log,id)=>EX[id].reps.filter((_,k)=>isDone(log,id,k)).length;
 function dayProgress(d){if(!d)return 0;const log=getLog(d);let t=0,n=0;for(const id of DAYS[d].ex){t+=EX[id].reps.length;n+=exCount(log,id)}return t?n/t:0}
-function volume(d){const log=getLog(d);let v=0,sets=0;for(const id in log){(log[id]||[]).forEach((s,k)=>{if(s&&s.d){sets++;const r=EX[id].reps[k];const w=parseFloat(s.w);if(w>0&&typeof r==='number')v+=w*r*(EX[id].per?2:1)}})}return{v:Math.round(v),sets}}
+function volume(d){const log=getLog(d);let v=0,sets=0;for(const id in log){(log[id]||[]).forEach((s,k)=>{if(s&&s.d){sets++;const t=EX[id].reps[k],r=typeof s.r==='number'?s.r:t;const w=parseFloat(s.w);if(w>0&&typeof r==='number')v+=w*r*(EX[id].per?2:1)}})}return{v:Math.round(v),sets}}
 function weekDates(){const d=new Date(now);const dow=(d.getDay()+6)%7;d.setDate(d.getDate()-dow);return [...Array(7)].map((_,i)=>{const x=new Date(d);x.setDate(d.getDate()+i);return x})}
 function trainedOn(dateIso){try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('gs:log:'+dateIso+':')){const log=JSON.parse(localStorage.getItem(k));for(const id in log)if((log[id]||[]).some(s=>s&&s.d))return true}}}catch(e){}return false}
 const planned=()=>Object.values(sched).filter(Boolean).length;
+const INC={squat:10,deadlift:10,sldl:10};const incOf=id=>INC[id]||5;
+function prevSession(id){let best=null;try{for(let i=0;i<localStorage.length;i++){const key=localStorage.key(i),m=key&&key.match(/^gs:log:(\d{4}-\d\d-\d\d):\d$/);if(!m||m[1]>=today)continue;const a=(JSON.parse(localStorage.getItem(key))||{})[id];if(a&&a.some(x=>x&&x.d)&&(!best||m[1]>best.date))best={date:m[1],sets:a}}}catch(e){}return best}
+function planOf(id){const e=EX[id],p=prevSession(id),fb=parseFloat(store.get('w:'+id,''))||null;
+  return{p,sets:e.reps.map((t,k)=>{const s=p&&p.sets[k];
+    if(e.bw)return{lastR:s&&s.d?(typeof s.r==='number'?s.r:t):null};
+    if(!s||!s.d||!(parseFloat(s.w)>0))return{w:fb};
+    const w=parseFloat(s.w),r=typeof s.r==='number'?s.r:t,hit=typeof t!=='number'||r>=t;
+    return{w:hit?w+incOf(id):w,up:hit,miss:!hit,lastW:w,lastR:r}})}}
+function planText(id){const e=EX[id],P=planOf(id),p=P.p;
+  if(!p)return `<div class="plan first">First time on this one. Pick a weight you can do for every rep with clean form. Next time I'll tell you when to go heavier.</div>`;
+  const d=new Date(p.date+'T12:00').toLocaleDateString('en-US',{weekday:'long'});
+  if(e.bw){const rs=p.sets.map((s,k)=>s&&s.d?(typeof s.r==='number'?s.r:e.reps[k]):'–');return `<div class="plan">Last ${d}: <b>${rs.join(', ')}</b> reps. ${e.reps[0]==='Max'?'Beat each set by one rep.':'Same again, slower and stricter.'}</div>`}
+  const last=p.sets.map((s,k)=>s&&s.d&&parseFloat(s.w)>0?`${s.w}×${typeof s.r==='number'?s.r:e.reps[k]}`:'–').join(', ');
+  const ups=P.sets.filter(x=>x.up).length,miss=P.sets.filter(x=>x.miss).length;
+  const msg=miss?`You missed reps on ${miss===1?'one set':miss+' sets'}. Same weight there until you get every rep.${ups?` Go up ${incOf(id)} lb on the rest.`:''}`:`You hit every rep. Add ${incOf(id)} lb today.`;
+  return `<div class="plan">Last ${d}: <b>${last}</b>. ${msg}</div>`}
 const repTxt=id=>{const e=EX[id],r=e.reps;return r.every(x=>x===r[0])?`${r.length} × ${r[0]}${e.per?' each leg':''}`:`${r.length} sets: ${r.join(', ')}`};
+let PL=[];
 const media=id=>GIF[id]||'';
 const fmt=n=>n.toLocaleString('en-US');
 
@@ -408,7 +439,7 @@ function home(){
     <div class="stat"><b>${vol.v?fmt(vol.v):vol.sets}</b><span>${vol.v?'lb moved today':'sets done today'}</span><div class="pips">${[...Array(10)].map((_,i)=>`<i class="${i<Math.round(prog*10)?'on':''}"></i>`).join('')}</div></div></div>
     <h2 class="sec">The work</h2><div class="list">`;
     dd.ex.forEach((id,i)=>{const e=EX[id],c=exCount(log,id),n=e.reps.length,ok=c===n;
-      h+=`<button class="row ${ok?'done':''}" data-a="open" data-i="${i}"><img src="${TH(id)}" alt="" loading="lazy"><div><div class="nm">${e.name}</div><div class="sm">${repTxt(id)}</div></div><div class="ck">${ok?'Done':c?c+'/'+n:''}</div></button>`});
+      h+=`<button class="row ${ok?'done':''}" data-a="open" data-i="${i}"><img src="${TH(id)}" alt="" loading="lazy"><div><div class="nm">${e.name}</div><div class="sm">${repTxt(id)}${!ok&&planOf(id).sets.some(x=>x.up)?` <span class="upn">+${incOf(id)} lb</span>`:''}</div></div><div class="ck">${ok?'Done':c?c+'/'+n:''}</div></button>`});
     h+=`</div>`;
   }
   h+=`<h2 class="sec">This week</h2><div class="week">`;
@@ -429,7 +460,8 @@ function workout(){
     <div class="demo"><img src="${media(id)}" alt="${e.name} demonstration" loading="lazy"><div class="idx">${i+1}<small>/${n}</small></div></div>
     <h3 class="disp">${e.name}</h3>
     <div class="mus">Works <b>${e.mus.join(', ').toLowerCase()}</b>. Rest ${e.rest}s between sets.${pr?` Your best: <b>${pr} lb</b>.`:''}</div>
-    <div class="sets">${e.reps.map((r,k)=>{const s=a[k]||{};return `<div class="set ${s.d?'done':''}" data-id="${id}" data-k="${k}">${s.pr?'<span class="pr">New best</span>':''}<div class="sn">${k+1}</div><div class="rp">${r==='Max'?'Max':r}<small>${r==='Max'?'as many as you can':'reps'+(e.per?' each leg':'')}</small></div>${e.bw?'<div class="bw">Bodyweight</div>':`<input inputmode="decimal" placeholder="${last?last:'lb'}" value="${s.w||''}" data-id="${id}" data-k="${k}" aria-label="Weight for set ${k+1} in pounds">`}<button class="go" data-a="set" data-id="${id}" data-k="${k}">${s.d?'Done':'Go'}</button></div>`}).join('')}</div>
+    ${planText(id)}
+    <div class="sets">${(PL=planOf(id).sets,'')}${e.reps.map((r,k)=>{const s=a[k]||{},q=PL[k]||{},rr=typeof s.r==='number'?s.r:(r==='Max'?(q.lastR||8):r);return `<div class="set ${s.d?'done':''}" data-id="${id}" data-k="${k}">${s.pr?'<span class="pr">New best</span>':''}<div class="sn">${k+1}</div><div class="rp"><span class="tg">${r==='Max'?'Max':r}<small>${r==='Max'?'as many as you can':'reps'+(e.per?' each leg':'')}</small></span><span class="stp"><button data-a="rm" data-id="${id}" data-k="${k}" aria-label="One rep less">−</button><b>${rr}</b><button data-a="rpl" data-id="${id}" data-k="${k}" aria-label="One rep more">+</button></span></div>${e.bw?'<div class="bw">Bodyweight</div>':`<div class="wi"><input inputmode="decimal" placeholder="${q.w?q.w:'lb'}" value="${s.w||''}" data-id="${id}" data-k="${k}" aria-label="Weight for set ${k+1} in pounds">${q.up?`<em class="hint up">+${incOf(id)} lb</em>`:q.miss?'<em class="hint">same</em>':''}</div>`}<button class="go" data-a="set" data-id="${id}" data-k="${k}">${s.d?'Done':'Go'}</button></div>`}).join('')}</div>
     <div class="how"><h4>How to do it</h4><ol>${e.steps.map(s=>`<li>${s}</li>`).join('')}</ol></div>
     <div class="how"><h4>Keep it clean</h4><ul>${e.tips.map(s=>`<li>${s}</li>`).join('')}</ul></div>
     <a class="vid" href="https://www.youtube.com/results?search_query=${encodeURIComponent('how to '+e.name+' proper form')}" target="_blank" rel="noopener">Watch a video demo</a>
@@ -483,7 +515,7 @@ function stopTimer(){store.set('tm',null);clearInterval(tmInt);const el=document
 function saveSet(id,k,patch){const log=getLog(S.day);log[id]=log[id]||[];log[id][k]=Object.assign({},log[id][k],patch);store.set(logKey(S.day),log);return log}
 function refreshCard(id){
   const log=getLog(S.day);
-  document.querySelectorAll(`.set[data-id="${id}"]`).forEach(el=>{const k=+el.dataset.k,s=(log[id]||[])[k]||{};el.classList.toggle('done',!!s.d);el.querySelector('.go').textContent=s.d?'Done':'Go';
+  document.querySelectorAll(`.set[data-id="${id}"]`).forEach(el=>{const k=+el.dataset.k,s=(log[id]||[])[k]||{};el.classList.toggle('done',!!s.d);el.querySelector('.go').textContent=s.d?'Done':'Go';const sb=el.querySelector('.stp b');if(sb&&typeof s.r==='number')sb.textContent=s.r;
     const b=el.querySelector('.pr');if(s.pr&&!b)el.insertAdjacentHTML('afterbegin','<span class="pr">New best</span>');if(!s.pr&&b)b.remove()});
   const b=document.querySelector(`[data-a="all"][data-id="${id}"]`);if(b)b.textContent=exDone(log,id)?'Undo all':'All sets done';
   onCard();
@@ -494,7 +526,8 @@ function completeSet(id,k){
   if(inp&&!inp.value&&inp.placeholder&&!isNaN(parseFloat(inp.placeholder))){inp.value=inp.placeholder;w=parseFloat(inp.placeholder);saveSet(id,k,{w:inp.value})}
   const pr=store.get('pr:'+id,0);let isPr=false;
   if(w>0){store.set('w:'+id,String(w));if(w>pr){isPr=pr>0;store.set('pr:'+id,w)}}
-  saveSet(id,k,{d:true,pr:isPr});
+  const cur=(getLog(S.day)[id]||[])[k]||{},t=EX[id].reps[k];
+  saveSet(id,k,{d:true,pr:isPr,r:typeof cur.r==='number'?cur.r:(t==='Max'?((planOf(id).sets[k]||{}).lastR||8):t)});
   return isPr;
 }
 
@@ -516,6 +549,7 @@ app.addEventListener('click',e=>{
   else if(a==='home'){stopTimer();home();window.scrollTo(0,0)}
   else if(a==='sched')schedSheet();
   else if(a==='tipx'){store.set('tipDone',true);home()}
+  else if(a==='rm'||a==='rpl'){const id=b.dataset.id,k=+b.dataset.k,s=(getLog(S.day)[id]||[])[k]||{},t=EX[id].reps[k];let r=typeof s.r==='number'?s.r:(typeof t==='number'?t:8);r=Math.max(0,Math.min(60,r+(a==='rm'?-1:1)));saveSet(id,k,{r});refreshCard(id)}
   else if(a==='set'){const id=b.dataset.id,k=+b.dataset.k,log=getLog(S.day);
     if(isDone(log,id,k)){saveSet(id,k,{d:false,pr:false});refreshCard(id);return}
     const isPr=completeSet(id,k);refreshCard(id);const all=exDone(getLog(S.day),id);
