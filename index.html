@@ -127,6 +127,15 @@ h2.sec{font-family:var(--disp);font-weight:800;font-size:30px;text-transform:upp
 .set.done .tg{display:none}
 .set.done .stp{display:flex}
 .set.done .rp{color:var(--chalk)}
+.swapb{display:flex;align-items:center;gap:10px;margin:4px 18px 14px;padding:0 14px;height:48px;width:calc(100% - 36px);border:1px dashed var(--edge);border-radius:3px;font-weight:600;font-size:15px;color:var(--chalk);text-align:left}
+.swapb svg{flex:none}
+.swapb span{color:var(--dust);margin-left:auto;font-weight:500}
+.swapb.on{border-style:solid;border-color:var(--hazard)}
+.opt{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:10px 0;border-top:1px solid var(--edge)}
+.opt img{width:64px;height:64px;border-radius:3px;object-fit:cover;flex:none}
+.opt .nm{font-weight:700;font-size:17px}
+.opt .sm{font-size:14px;color:var(--dust);margin-top:2px}
+.opt.cur .nm{color:var(--hazard)}
 .plan{margin:14px 18px 0;padding:12px 14px;background:var(--plate);border-left:3px solid var(--hazard);border-radius:2px;font-size:15px;line-height:1.45}
 .plan.first{border-left-color:var(--edge)}
 .plan b{font-family:var(--num);font-weight:700;font-size:17px}
@@ -373,11 +382,71 @@ const DAYS={
 };
 const TH=id=>'thumbs/'+id+'.jpg';
 const GIF=/*GIFS*/{"bench": "gifs/bench.gif", "incline": "gifs/incline.gif", "pullover": "gifs/pullover.gif", "chins": "gifs/chins.gif", "rows": "gifs/rows.gif", "deadlift": "gifs/deadlift.gif", "crunch": "gifs/crunch.gif", "cleanpress": "gifs/cleanpress.gif", "lateral": "gifs/lateral.gif", "bbcurl": "gifs/bbcurl.gif", "cgbench": "gifs/cgbench.gif", "dbcurl": "gifs/dbcurl.gif", "triext": "gifs/triext.gif", "wristcurl": "gifs/wristcurl.gif", "revwrist": "gifs/revwrist.gif", "revcrunch": "gifs/revcrunch.gif", "squat": "gifs/squat.gif", "lunge": "gifs/lunge.gif", "legcurl": "gifs/legcurl.gif", "calf": "gifs/calf.gif", "sldl": "gifs/sldl.gif"}/*END*/;
+const ALTX={
+ dbbench:{name:'Dumbbell Bench Press',mus:['Chest','Front delts','Triceps'],gear:'Dumbbells + flat bench',
+  steps:['Sit on a flat bench with a dumbbell on each thigh, then lie back and bring them over your chest.','Lower the dumbbells to the sides of your chest, elbows about 45 degrees from your body.','Press them back up until your arms are straight.','Control the weight the whole way; don\'t let them crash together at the top.'],
+  tips:['Use about 40% of your barbell weight in each hand to start.','Feet flat, shoulder blades squeezed.']},
+ pushup:{name:'Push-Ups',mus:['Chest','Triceps','Front delts'],gear:'Just the floor',bw:true,
+  steps:['Hands on the floor slightly wider than your shoulders, body in a straight line.','Lower your chest until it\'s just above the floor.','Push back up to straight arms.','Keep your hips in line the whole time.'],
+  tips:['Too easy? Put your feet on a bench or slow the way down to 3 seconds.','Count every rep you get; aim to beat it next time.']},
+ incdb:{name:'Incline Dumbbell Press',mus:['Upper chest','Front delts','Triceps'],gear:'Dumbbells + adjustable bench',
+  steps:['Set a bench to about 30 to 45 degrees and sit back with a dumbbell in each hand.','Start with the dumbbells at your upper chest.','Press them up until your arms are straight.','Lower slowly back to your upper chest.'],
+  tips:['Keep your hips on the seat.','Elbows slightly in, not flared straight out.']},
+ latpull:{name:'Lat Pulldown',mus:['Lats','Upper back','Biceps'],gear:'Lat pulldown machine',
+  steps:['Sit with your thighs locked under the pads and grab the bar a little wider than your shoulders.','Lean back slightly and pull the bar to your upper chest.','Squeeze your back at the bottom.','Let the bar rise back up slowly until your arms are straight.'],
+  tips:['Drive your elbows down, don\'t yank with your arms.','No swinging your body to move the weight.']},
+ dbrow:{name:'One-Arm Dumbbell Row',mus:['Lats','Mid back','Rear delts'],gear:'Dumbbell + flat bench',
+  steps:['Put one knee and the same-side hand on a flat bench, back flat.','Hold the dumbbell with the other arm hanging straight down.','Pull it up to your hip, elbow close to your body.','Lower it all the way down. Do all reps, then switch sides.'],
+  tips:['Weight entered is for one dumbbell; reps are per arm.','Don\'t twist your torso to lift it.']},
+ cablerow:{name:'Seated Cable Row',mus:['Mid back','Lats','Rear delts'],gear:'Low cable row machine',
+  steps:['Sit with feet on the platform, knees slightly bent, holding the handle.','Sit tall and pull the handle to your stomach.','Squeeze your shoulder blades together.','Let your arms extend forward slowly.'],
+  tips:['Torso stays upright; don\'t rock back and forth.','Chest up the whole time.']},
+ dbdl:{name:'Dumbbell Deadlift',mus:['Lower back','Glutes','Hamstrings'],gear:'Two dumbbells',
+  steps:['Stand with a dumbbell in each hand at your sides.','Push your hips back and bend your knees, back flat, until the dumbbells reach mid-shin.','Drive through your feet and stand up tall.','Lower them the same way, hips back first.'],
+  tips:['Weight entered is for one dumbbell.','A flat back matters more than the weight.']},
+ dbpress:{name:'Seated Dumbbell Press',mus:['Shoulders','Triceps'],gear:'Dumbbells + upright bench',
+  steps:['Sit on a bench with back support, dumbbells at shoulder height.','Press both dumbbells straight up until your arms are straight.','Lower them slowly back to your shoulders.','Keep your back against the pad.'],
+  tips:['Weight entered is for one dumbbell.','Don\'t arch your lower back to finish the rep.']},
+ cablecurl:{name:'Cable Curl',mus:['Biceps'],gear:'Low cable with straight bar',
+  steps:['Stand facing a low pulley, holding the bar with an underhand grip.','Pin your elbows to your sides.','Curl the bar up to your shoulders.','Lower it until your arms are straight.'],
+  tips:['The cable keeps tension the whole way; go slow.','No swinging.']},
+ pushdown:{name:'Triceps Pushdown',mus:['Triceps'],gear:'High cable with bar or rope',
+  steps:['Stand facing a high pulley, holding the bar at chest height.','Pin your elbows to your sides.','Push the bar down until your arms are straight.','Let it come back up to chest height slowly.'],
+  tips:['Only your forearms move.','Squeeze hard at the bottom.']},
+ dbwrist:{name:'Dumbbell Wrist Curl',mus:['Forearms'],gear:'One light dumbbell',
+  steps:['Sit on a bench, forearm resting on your thigh, wrist just past your knee.','Palm up for regular curls, palm down for reverse curls.','Curl your wrist up as far as it goes.','Lower slowly. Do all reps, then switch hands.'],
+  tips:['Forearm stays glued to your thigh.','Light weight, full range.']},
+ goblet:{name:'Goblet Squat',mus:['Quads','Glutes'],gear:'One heavy dumbbell',
+  steps:['Hold one dumbbell vertically against your chest with both hands.','Feet shoulder-width apart, toes slightly out.','Squat down until your thighs are at or below parallel, chest up.','Stand back up through your whole foot.'],
+  tips:['Elbows go inside your knees at the bottom.','Go slow; with lighter weight, control is what makes it work.']},
+ legpress:{name:'Leg Press',mus:['Quads','Glutes'],gear:'Leg press machine',
+  steps:['Sit with your back flat on the pad and feet shoulder-width on the platform.','Release the safeties and lower the platform until your knees are at about 90 degrees.','Press it back up without locking your knees.','Lock the safeties when you\'re done.'],
+  tips:['Lower back stays on the pad; don\'t go so deep it rounds.','Not the same weight as squats; start fresh.']},
+ dblegcurl:{name:'Dumbbell Leg Curl',mus:['Hamstrings'],gear:'Dumbbell + flat bench',
+  steps:['Lie face down on a flat bench with your knees at the end.','Have a light dumbbell squeezed between your feet.','Curl your heels toward your glutes.','Lower slowly until your legs are almost straight.'],
+  tips:['Start light; the dumbbell must stay secure between your feet.','Keep your hips pressed down.']},
+ dbrdl:{name:'Dumbbell Romanian Deadlift',mus:['Hamstrings','Glutes','Lower back'],gear:'Two dumbbells',
+  steps:['Stand holding a dumbbell in each hand in front of your thighs, knees soft.','Push your hips back and slide the dumbbells down your legs.','Stop at mid-shin or when your hamstrings are fully stretched, back flat.','Squeeze your glutes and stand up.'],
+  tips:['Weight entered is for one dumbbell.','Stop before your back rounds.']},
+ sapull:{name:'Straight-Arm Pulldown',mus:['Lats','Chest'],gear:'High cable with straight bar',
+  steps:['Stand facing a high pulley, lean forward slightly, arms straight holding the bar at head height.','Pull the bar down in an arc to your thighs, arms staying straight.','Squeeze your lats at the bottom.','Let it rise back up slowly.'],
+  tips:['Arms stay nearly straight the whole time.','It\'s a stretch movement like the pullover; go controlled.']},
+ cablelat:{name:'Cable Lateral Raise',mus:['Side delts'],gear:'Low cable with handle',
+  steps:['Stand side-on to a low pulley, holding the handle in the far hand.','Raise your arm out to the side to shoulder height, slight bend in the elbow.','Pause at the top.','Lower slowly. Do all reps, then switch sides.'],
+  tips:['Light weight; the cable is harder than it looks.','No leaning away to cheat.']}
+};
+const ALTS={bench:['dbbench','pushup'],incline:['incdb','pushup'],pullover:['sapull'],chins:['latpull'],rows:['dbrow','cablerow'],deadlift:['dbdl'],cleanpress:['dbpress'],lateral:['cablelat'],bbcurl:['cablecurl'],cgbench:['pushdown'],dbcurl:['cablecurl'],triext:['pushdown'],wristcurl:['dbwrist'],revwrist:['dbwrist'],squat:['goblet','legpress'],legcurl:['dblegcurl'],sldl:['dbrdl']};
+const ALT_OF={};for(const o in ALTS)for(const a of ALTS[o])if(!ALT_OF[a])ALT_OF[a]=o;
+for(const a in ALTX){const o=EX[ALT_OF[a]];EX[a]=Object.assign({reps:o.reps.map(r=>a==='pushup'?'Max':r),rest:o.rest,alt:true},ALTX[a]);if(a==='pushup')EX[a].bw=true}
+for(const a in ALTX)GIF[a]='gifs/'+a+'.gif';
 if(typeof module!=='undefined')module.exports={EX,DAYS,figure,svgWrap,poseAt};
 
 
 /* ================= APP ================= */
 if(typeof document!=='undefined')(function(){
+const swapKey=d=>'swap:'+today+':'+d;
+const getSwaps=d=>store.get(swapKey(d),{});
+const exList=d=>{const sw=getSwaps(d);return DAYS[d].ex.map(o=>sw[o]||o)};
 const WD=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const WDL=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const store={get(k,d){try{const v=localStorage.getItem('gs:'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('gs:'+k,JSON.stringify(v))}catch(e){}}};
@@ -393,7 +462,7 @@ const getLog=d=>store.get(logKey(d),{});
 const isDone=(log,id,k)=>!!(log[id]&&log[id][k]&&log[id][k].d);
 const exDone=(log,id)=>EX[id].reps.every((_,k)=>isDone(log,id,k));
 const exCount=(log,id)=>EX[id].reps.filter((_,k)=>isDone(log,id,k)).length;
-function dayProgress(d){if(!d)return 0;const log=getLog(d);let t=0,n=0;for(const id of DAYS[d].ex){t+=EX[id].reps.length;n+=exCount(log,id)}return t?n/t:0}
+function dayProgress(d){if(!d)return 0;const log=getLog(d);let t=0,n=0;for(const id of exList(d)){t+=EX[id].reps.length;n+=exCount(log,id)}return t?n/t:0}
 function volume(d){const log=getLog(d);let v=0,sets=0;for(const id in log){(log[id]||[]).forEach((s,k)=>{if(s&&s.d){sets++;const t=EX[id].reps[k],r=typeof s.r==='number'?s.r:t;const w=parseFloat(s.w);if(w>0&&typeof r==='number')v+=w*r*(EX[id].per?2:1)}})}return{v:Math.round(v),sets}}
 function weekDates(){const d=new Date(now);const dow=(d.getDay()+6)%7;d.setDate(d.getDate()-dow);return [...Array(7)].map((_,i)=>{const x=new Date(d);x.setDate(d.getDate()+i);return x})}
 function trainedOn(dateIso){try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('gs:log:'+dateIso+':')){const log=JSON.parse(localStorage.getItem(k));for(const id in log)if((log[id]||[]).some(s=>s&&s.d))return true}}}catch(e){}return false}
@@ -429,16 +498,16 @@ function home(){
     <div class="restday"><p>Feel like lifting anyway? Pick one.</p><div class="alt">${[1,2,3].map(d=>`<button data-a="force" data-d="${d}"><b>${DAYS[d].short}</b><span>Day ${d}</span></button>`).join('')}</div></div>`;
   }else{
     const prog=dayProgress(day),vol=volume(day),log=getLog(day);
-    const mins=Math.round(dd.ex.reduce((a,id)=>a+EX[id].reps.length*(1+EX[id].rest/60),0)/5)*5;
+    const mins=Math.round(exList(S.day).reduce((a,id)=>a+EX[id].reps.length*(1+EX[id].rest/60),0)/5)*5;
     const label=prog>=1?'Review session':prog>0?`Keep going`:`Start ${dd.short}`;
     h+=`<div class="pad"><h1 class="disp title ${dd.title.length>9?'small':''}">${dd.title.replace(/\n/g,'<br>')}</h1>
-    <div class="line">${dd.line}</div><div class="sub">${isToday?'Today':WDL[S.sel]}, day ${day} of the split. ${dd.ex.length} exercises, about ${mins} minutes.</div></div>
-    <div class="media"><img src="${media(dd.ex[0])}" alt="${EX[dd.ex[0]].name} demonstration"><div class="wt">First up: ${EX[dd.ex[0]].name}</div></div>
+    <div class="line">${dd.line}</div><div class="sub">${isToday?'Today':WDL[S.sel]}, day ${day} of the split. ${exList(S.day).length} exercises, about ${mins} minutes.</div></div>
+    <div class="media"><img src="${media(exList(S.day)[0])}" alt="${EX[exList(S.day)[0]].name} demonstration"><div class="wt">First up: ${EX[exList(S.day)[0]].name}</div></div>
     <button class="cta" data-a="start">${label}</button>
     <div class="stats"><div class="stat"><b>${did}<span style="font-size:22px;color:var(--dust)">/${plan}</span></b><span>sessions this week</span><div class="pips">${[...Array(plan)].map((_,i)=>`<i class="${i<did?'on':''}"></i>`).join('')}</div></div>
     <div class="stat"><b>${vol.v?fmt(vol.v):vol.sets}</b><span>${vol.v?'lb moved today':'sets done today'}</span><div class="pips">${[...Array(10)].map((_,i)=>`<i class="${i<Math.round(prog*10)?'on':''}"></i>`).join('')}</div></div></div>
     <h2 class="sec">The work</h2><div class="list">`;
-    dd.ex.forEach((id,i)=>{const e=EX[id],c=exCount(log,id),n=e.reps.length,ok=c===n;
+    exList(S.day).forEach((id,i)=>{const e=EX[id],c=exCount(log,id),n=e.reps.length,ok=c===n;
       h+=`<button class="row ${ok?'done':''}" data-a="open" data-i="${i}"><img src="${TH(id)}" alt="" loading="lazy"><div><div class="nm">${e.name}</div><div class="sm">${repTxt(id)}${!ok&&planOf(id).sets.some(x=>x.up)?` <span class="upn">+${incOf(id)} lb</span>`:''}</div></div><div class="ck">${ok?'Done':c?c+'/'+n:''}</div></button>`});
     h+=`</div>`;
   }
@@ -452,14 +521,15 @@ function home(){
 }
 
 function workout(){
-  const dd=DAYS[S.day],log=getLog(S.day),n=dd.ex.length;
+  const dd=DAYS[S.day],log=getLog(S.day),n=exList(S.day).length;
   if(!store.get('start:'+today+':'+S.day,0))store.set('start:'+today+':'+S.day,Date.now());
   let h=`<div class="wo"><div class="wbar"><button class="sq" data-a="home" aria-label="Back to home"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EDE9E2" stroke-width="2.6" stroke-linecap="square"><path d="M15 5l-7 7 7 7"/></svg></button><div class="t">${dd.short}</div><div class="c" id="cnt"></div></div><div class="segs" id="segs"></div><div class="scroller" id="sc"><div class="track" id="track">`;
-  dd.ex.forEach((id,i)=>{const e=EX[id],a=log[id]||[],last=store.get('w:'+id,''),pr=store.get('pr:'+id,0);
+  exList(S.day).forEach((id,i)=>{const e=EX[id],a=log[id]||[],last=store.get('w:'+id,''),pr=store.get('pr:'+id,0);
     h+=`<section class="card" data-i="${i}"><div class="inner">
     <div class="demo"><img src="${media(id)}" alt="${e.name} demonstration" loading="lazy"><div class="idx">${i+1}<small>/${n}</small></div></div>
     <h3 class="disp">${e.name}</h3>
-    <div class="mus">Works <b>${e.mus.join(', ').toLowerCase()}</b>. Rest ${e.rest}s between sets.${pr?` Your best: <b>${pr} lb</b>.`:''}</div>
+    ${(()=>{const o=DAYS[S.day].ex[i];if(!ALTS[o])return '';const sw=id!==o;return `<button class="swapb ${sw?'on':''}" data-a="swap" data-o="${o}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F5C518" stroke-width="2.4" stroke-linecap="square"><path d="M4 8h14l-4-4M20 16H6l4 4"/></svg>${sw?'Swapped in for '+EX[o].name:'Equipment taken?'}<span>${sw?'Change':'Swap it'}</span></button>`})()}
+    <div class="mus">Works <b>${e.mus.join(', ').toLowerCase()}</b>.${e.gear?` Uses: <b>${e.gear.toLowerCase()}</b>.`:''} Rest ${e.rest}s between sets.${pr?` Your best: <b>${pr} lb</b>.`:''}</div>
     ${planText(id)}
     <div class="sets">${(PL=planOf(id).sets,'')}${e.reps.map((r,k)=>{const s=a[k]||{},q=PL[k]||{},rr=typeof s.r==='number'?s.r:(r==='Max'?(q.lastR||8):r);return `<div class="set ${s.d?'done':''}" data-id="${id}" data-k="${k}">${s.pr?'<span class="pr">New best</span>':''}<div class="sn">${k+1}</div><div class="rp"><span class="tg">${r==='Max'?'Max':r}<small>${r==='Max'?'as many as you can':'reps'+(e.per?' each leg':'')}</small></span><span class="stp"><button data-a="rm" data-id="${id}" data-k="${k}" aria-label="One rep less">−</button><b>${rr}</b><button data-a="rpl" data-id="${id}" data-k="${k}" aria-label="One rep more">+</button></span></div>${e.bw?'<div class="bw">Bodyweight</div>':`<div class="wi"><input inputmode="decimal" placeholder="${q.w?q.w:'lb'}" value="${s.w||''}" data-id="${id}" data-k="${k}" aria-label="Weight for set ${k+1} in pounds">${q.up?`<em class="hint up">+${incOf(id)} lb</em>`:q.miss?'<em class="hint">same</em>':''}</div>`}<button class="go" data-a="set" data-id="${id}" data-k="${k}">${s.d?'Done':'Go'}</button></div>`}).join('')}</div>
     <div class="how"><h4>How to do it</h4><ol>${e.steps.map(s=>`<li>${s}</li>`).join('')}</ol></div>
@@ -473,19 +543,19 @@ function workout(){
   pager();place(false);onCard();saveUI();resumeTimer();
 }
 function onCard(){
-  const dd=DAYS[S.day],log=getLog(S.day),n=dd.ex.length;
-  const pv=document.getElementById('pv'),nx=document.getElementById('nx');if(pv){pv.disabled=S.idx===0;nx.style.visibility=S.idx>=n?'hidden':'visible';nx.innerHTML=S.idx<n-1?`Next<span>${EX[dd.ex[S.idx+1]].name}</span>`:'Finish'}
+  const dd=DAYS[S.day],log=getLog(S.day),n=exList(S.day).length;
+  const pv=document.getElementById('pv'),nx=document.getElementById('nx');if(pv){pv.disabled=S.idx===0;nx.style.visibility=S.idx>=n?'hidden':'visible';nx.innerHTML=S.idx<n-1?`Next<span>${EX[exList(S.day)[S.idx+1]].name}</span>`:'Finish'}
   document.getElementById('cnt').innerHTML=S.idx<n?`${S.idx+1}<span>/${n}</span>`:'Done';
-  document.getElementById('segs').innerHTML=dd.ex.map((id,i)=>`<i class="${exDone(log,id)?'d':''} ${i===S.idx?'cur':''}"></i>`).join('');
+  document.getElementById('segs').innerHTML=exList(S.day).map((id,i)=>`<i class="${exDone(log,id)?'d':''} ${i===S.idx?'cur':''}"></i>`).join('');
   if(S.idx>=n){
     const v=volume(S.day),st=store.get('start:'+today+':'+S.day,Date.now()),mins=Math.max(1,Math.round((Date.now()-st)/60000)),p=dayProgress(S.day);
-    const pr=dd.ex.reduce((a,id)=>a+((log[id]||[]).filter(s=>s&&s.pr).length),0);
+    const pr=exList(S.day).reduce((a,id)=>a+((log[id]||[]).filter(s=>s&&s.pr).length),0);
     document.getElementById('fin').innerHTML=`<div class="disp">${p>=1?'Done.':'Not<br>yet.'}</div><p>${p>=1?`${dd.short} is in the books. Eat, then sleep.`:`${Math.round(p*100)}% of today's sets are checked off. Swipe back and finish them.`}</p>
     <div class="stats"><div class="stat"><b>${fmt(v.v)}</b><span>lb moved</span></div><div class="stat"><b>${v.sets}</b><span>sets done</span></div><div class="stat"><b>${mins}</b><span>minutes</span></div><div class="stat"><b>${pr}</b><span>new bests</span></div></div>
     <div class="next" style="margin:0"><button class="nx" data-a="home">Back to home</button></div>`;
   }
 }
-const NC=()=>DAYS[S.day].ex.length+1;
+const NC=()=>exList(S.day).length+1;
 function place(anim,px){const tr=document.getElementById('track');if(!tr)return;tr.style.transition=anim?'transform .3s cubic-bezier(.2,.8,.2,1)':'none';tr.style.transform=`translate3d(calc(${-S.idx*100}% + ${px||0}px),0,0)`}
 function goTo(i){i=Math.max(0,Math.min(NC()-1,i));const ch=i!==S.idx;S.idx=i;place(true);if(ch){onCard();saveUI();const c=document.querySelector(`.card[data-i="${i}"]`);if(c)c.scrollTop=0}}
 function pager(){
@@ -531,6 +601,14 @@ function completeSet(id,k){
   return isPr;
 }
 
+function swapSheet(o){
+  const bg=document.createElement('div');bg.className='sheet-bg';const cur=getSwaps(S.day)[o]||o;
+  const opts=[o,...ALTS[o]];
+  bg.innerHTML=`<div class="sheet" role="dialog" aria-label="Swap exercise"><h3 class="disp">Swap it</h3>${opts.map(id=>`<button class="opt ${id===cur?'cur':''}" data-pick="${id}"><img src="${TH(id)}" alt=""><div><div class="nm">${EX[id].name}${id===o?' (original)':''}</div><div class="sm">${EX[id].gear||'The plan from the book'}</div></div></button>`).join('')}<button class="done-btn" data-x="1">Cancel</button><div class="note">The swap only counts for today. Your weights are tracked separately for each exercise.</div></div>`;
+  bg.addEventListener('click',e=>{const b=e.target.closest('button');if(e.target===bg||(b&&b.dataset.x)){bg.remove();return}
+    if(b&&b.dataset.pick){const sw=getSwaps(S.day);if(b.dataset.pick===o)delete sw[o];else sw[o]=b.dataset.pick;store.set(swapKey(S.day),sw);bg.remove();workout()}});
+  document.body.appendChild(bg);
+}
 function schedSheet(){
   const bg=document.createElement('div');bg.className='sheet-bg';const order=[1,2,3,4,5,6,0];
   const draw=()=>{bg.innerHTML=`<div class="sheet" role="dialog" aria-label="Weekly schedule"><h3 class="disp">Your week</h3>${order.map(w=>`<div class="srow"><b>${WDL[w]}</b><div class="seg">${[1,2,3,0].map(d=>`<button class="${sched[w]===d?'on':''}" data-w="${w}" data-d="${d}">${d?d:'Rest'}</button>`).join('')}</div></div>`).join('')}<button class="done-btn" data-x="1">Save</button><div class="note">1 is chest and back, 2 is shoulders and arms, 3 is legs. Arnold's plan runs each one twice a week with Sunday off.</div></div>`};
@@ -544,17 +622,18 @@ app.addEventListener('click',e=>{
   const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
   if(a==='pick'){S.sel=+b.dataset.w;S.day=sched[S.sel]||0;home()}
   else if(a==='force'){S.day=+b.dataset.d;home();window.scrollTo(0,0)}
-  else if(a==='start'){const log=getLog(S.day);const i=DAYS[S.day].ex.findIndex(id=>!exDone(log,id));S.idx=i<0?0:i;workout()}
+  else if(a==='start'){const log=getLog(S.day);const i=exList(S.day).findIndex(id=>!exDone(log,id));S.idx=i<0?0:i;workout()}
   else if(a==='open'){S.idx=+b.dataset.i;workout()}
   else if(a==='home'){stopTimer();home();window.scrollTo(0,0)}
   else if(a==='sched')schedSheet();
+  else if(a==='swap')swapSheet(b.dataset.o);
   else if(a==='tipx'){store.set('tipDone',true);home()}
   else if(a==='rm'||a==='rpl'){const id=b.dataset.id,k=+b.dataset.k,s=(getLog(S.day)[id]||[])[k]||{},t=EX[id].reps[k];let r=typeof s.r==='number'?s.r:(typeof t==='number'?t:8);r=Math.max(0,Math.min(60,r+(a==='rm'?-1:1)));saveSet(id,k,{r});refreshCard(id)}
   else if(a==='set'){const id=b.dataset.id,k=+b.dataset.k,log=getLog(S.day);
     if(isDone(log,id,k)){saveSet(id,k,{d:false,pr:false});refreshCard(id);return}
     const isPr=completeSet(id,k);refreshCard(id);const all=exDone(getLog(S.day),id);
     startTimer(EX[id].rest,isPr?'New best.<br>Rest up.':all?'Lift done.<br>Next one.':'Rest.<br>Breathe.');
-    if(all)setTimeout(()=>{if(S.idx===DAYS[S.day].ex.indexOf(id))goTo(S.idx+1)},700)}
+    if(all)setTimeout(()=>{if(S.idx===exList(S.day).indexOf(id))goTo(S.idx+1)},700)}
   else if(a==='all'){const id=b.dataset.id,log=getLog(S.day),done=exDone(log,id);EX[id].reps.forEach((_,k)=>{if(done)saveSet(id,k,{d:false,pr:false});else if(!isDone(log,id,k))completeSet(id,k)});refreshCard(id);if(!done)setTimeout(()=>goTo(S.idx+1),350)}
   else if(a==='next')goTo(S.idx+1);
   else if(a==='t+'){tmEnd+=15000;tmLen+=15000;const t=store.get('tm',{});store.set('tm',Object.assign(t,{end:tmEnd,len:tmLen}));tickT()}
